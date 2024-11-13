@@ -1,8 +1,6 @@
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'gps.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:platform_maps_flutter/platform_maps_flutter.dart';
 import 'dart:async';
 
@@ -20,20 +18,20 @@ class MyMap extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const MaterialApp(
-      home: MyHomePage(),
+      home: MyMapPage(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key});
+class MyMapPage extends StatefulWidget {
+  const MyMapPage({super.key});
 
   @override
   // ignore: library_private_types_in_public_api
-  _MyHomePageState createState() => _MyHomePageState();
+  _MyMapPageState createState() => _MyMapPageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _MyMapPageState extends State<MyMapPage> {
   // 位置情報の初期値
   double _zoom = 16;
   double _lat = 33.12;
@@ -72,7 +70,10 @@ class _MyHomePageState extends State<MyHomePage> {
         if (_markerNo >= 20) {
           _markerNo = 0;
         }
-        setState(() {
+        //実態がある場合のみ、画面を更新する
+        if (mounted == true)
+        {
+          setState(() {
             _controller.animateCamera(
               CameraUpdate.newCameraPosition(
                 CameraPosition(
@@ -82,6 +83,8 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
             );
           });
+        }
+
       },
     );
   }

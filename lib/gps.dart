@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
-//import 'dart:developer'
+
 
 // debug用座標リスト
 List<(double,double)> debugPositions = [
