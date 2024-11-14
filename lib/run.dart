@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'gps.dart';
 import 'package:platform_maps_flutter/platform_maps_flutter.dart';
 import 'dart:async';
+import 'package:fl_chart/fl_chart.dart';
 
 // info.plistに以下を追加
 // 	<key>MinimumOSVersion</key>
@@ -59,55 +60,162 @@ class _MyRunPageState extends State<MyRunPage> {
   //  
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    double btnSize = screenWidth * 0.95;
+    double btnHight = screenWidth * 0.1;
+    final styl0 = TextButton.styleFrom(
+      fixedSize: Size(btnSize,btnHight),// 幅,高さ
+      foregroundColor: Colors.white,
+      backgroundColor: Colors.black,
+    );
+    final styl1 = TextButton.styleFrom(
+      fixedSize: Size(btnSize/4,btnHight),// 幅,高さ
+      foregroundColor: Colors.white,
+      backgroundColor: Colors.black,
+    );
+    final styl2 = TextButton.styleFrom(
+      fixedSize: Size(btnSize/7,btnHight),// 幅,高さ
+      foregroundColor: Colors.white,
+      backgroundColor: Colors.black,
+    );
     return Scaffold(
      body: Column(children: [
-          const Text("HelloWorld"),
-          const Text("ハローワールド"),
           TextButton(
-            onPressed: () => {print("ボタンが押されたよ")},
-            child: const Text("テキストボタン"),
+              style: styl0,
+            onPressed: () => {print("Timeボタンが押されたよ")},
+            child: const Text("00:00:00"),
           ),
-         Row(
+          TextButton(
+              style:  styl0,   
+            onPressed: () => {print("Resultボタンが押されたよ")},
+            child: const Text("0.0km"),
+          ),
+          Row(
              mainAxisAlignment: MainAxisAlignment.spaceAround,
-             children: const [
-               Icon(
-                 Icons.favorite,
-                 color: Colors.pink,
-                 size: 24.0,
-               ),
-               Icon(
-                 Icons.audiotrack,
-                 color: Colors.green,
-                 size: 30.0,
-               ),
-               Icon(
-                 Icons.beach_access,
-                 color: Colors.blue,
-                 size: 36.0,
-               ),
+             children: [
+                TextButton(
+                  style: styl1,         
+                  onPressed: () => {print("Startボタンが押されたよ")},
+                  child: const Text("Start"),
+                ),
+                TextButton(
+                  style: styl1,  
+                  onPressed: () => {print("Stopタンが押されたよ")},
+                  child: const Text("Stop"),
+                ),
+                TextButton(
+                  style: styl1,  
+                  onPressed: () => {print("RunTypeタンが押されたよ")},
+                  child: const Text("RunType"),
+                ),
              ]),
-        ])
-      ,      
-      floatingActionButton:  Column(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: <Widget>[
-            FloatingActionButton(
-              onPressed:  () => {print("ボタンが押されたよ")},
-              tooltip: 'ChangeMap',
-              child: const Icon(Icons.layers),
+          SizedBox(
+            width: screenWidth * 0.95,
+            height: screenWidth * 0.95 * 0.4,
+            child: LineChart(
+              LineChartData(
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: const [
+                      FlSpot(1, 0),
+                      FlSpot(2, 400),
+                      FlSpot(3, 650),
+                      FlSpot(4, 800),
+                      FlSpot(5, 870),
+                      FlSpot(6, 920),
+                      FlSpot(7, 960),
+                      FlSpot(8, 980),
+                      FlSpot(9, 990),
+                      FlSpot(10, 995),
+                    ],
+                    isCurved: true,
+                    color: Colors.blue,
+                  ),
+                ],
+                titlesData: const FlTitlesData(
+                  topTitles: AxisTitles(
+                    axisNameWidget: Text(
+                      "速度",
+                    ),
+                    axisNameSize: 35.0,
+                  ),
+                  rightTitles:
+                      AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                ),
+                maxY: 1000,
+                minY: 0,
+              ),
             ),
-            FloatingActionButton(
-              onPressed:  () => {print("ボタンが押されたよ")},
-              tooltip: 'Increment',
-              child: const Icon(Icons.add),
+          ),
+          SizedBox(
+            width: screenWidth * 0.95,
+            height: screenWidth * 0.95 * 0.4,
+            child: LineChart(
+              LineChartData(
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: const [
+                      FlSpot(1, 0),
+                      FlSpot(2, 400),
+                      FlSpot(3, 650),
+                      FlSpot(4, 800),
+                      FlSpot(5, 870),
+                      FlSpot(6, 920),
+                      FlSpot(7, 960),
+                      FlSpot(8, 980),
+                      FlSpot(9, 990),
+                      FlSpot(10, 995),
+                    ],
+                    isCurved: true,
+                    color: Colors.blue,
+                  ),
+                ],
+                titlesData: const FlTitlesData(
+                  topTitles: AxisTitles(
+                    axisNameWidget: Text(
+                      "標高",
+                    ),
+                    axisNameSize: 35.0,
+                  ),
+                  rightTitles:
+                      AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                ),
+                maxY: 1000,
+                minY: 0,
+              ),
             ),
-            FloatingActionButton(
-              onPressed:  () => {print("ボタンが押されたよ")},
-              tooltip: 'Decrement',
-              child: const Icon(Icons.remove),
-            ),
-          ],
-        ),
-      );
+          ),
+          Row(
+             mainAxisAlignment: MainAxisAlignment.spaceAround,
+             children: [
+                TextButton(
+                  style: styl2,    
+                  onPressed: () => {print("<<が押されたよ")},
+                  child: const Text("<<"),
+                ),
+                TextButton(
+                  style:  styl2,   
+                  onPressed: () => {print("<が押されたよ")},
+                  child: const Text("<"),
+                ),
+                TextButton(
+                  style:  styl2,   
+                  onPressed: () => {print("allが押されたよ")},
+                  child: const Text("al"),
+                ),
+                TextButton(
+                  style:  styl2,  
+                  onPressed: () => {print(">が押されたよ")},
+                  child: const Text(">"),
+                ),
+                TextButton(
+                  style:  styl2,  
+                  onPressed: () => {print(">>が押されたよ")},
+                  child: const Text(">>"),
+                ),
+             ]),
+    ]),
+
+    );
   }
 }
