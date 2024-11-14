@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'map.dart';
-import 'gps.dart';
+import 'model/gps.dart';
 import 'run.dart';
 
 void main() {

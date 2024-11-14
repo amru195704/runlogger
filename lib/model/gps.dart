@@ -1,6 +1,8 @@
-import 'package:flutter/foundation.dart';
-import 'package:geolocator/geolocator.dart';
+import 'dart:async';
 
+import 'package:flutter/foundation.dart';
+import 'package:flutter_application_2/model/gpsLogData.dart';
+import 'package:geolocator/geolocator.dart';
 
 // debug用座標リスト
 List<(double,double)> debugPositions = [
@@ -192,4 +194,45 @@ Future<Position> getLocation() async
   {
     return await Geolocator.getCurrentPosition();
   }
+}
+
+/// GPSの位置情報を取得して、gpsLogDataに格納する
+bool _gpsStartFlg = false;
+bool _gpsLogSartFlg = false;
+CoordinateTable _coordinateTable = CoordinateTable();
+//
+void gpsStart()
+{
+  _gpsStartFlg = true;
+  // 1. Timer.periodic : 新しい繰り返しタイマーを作成します
+  // 1秒ごとに _counterを1ずつ足していく
+  Timer.periodic(
+    // 第一引数：繰り返す間隔の時間を設定
+    const Duration(seconds: 1),
+    // 第二引数：その間隔ごとに動作させたい処理を書く
+    (Timer timer) async {
+      final pos = await getLocation() ;
+      if (_gpsLogSartFlg == true) {
+        // 位置情報を記録する
+        _coordinateTable.addCoordinate(Coordinate.now(
+          latitude: pos.latitude,
+          longitude: pos.longitude,
+          altitude: pos.altitude,
+        ));
+      }
+    },
+  );
+}
+//
+void gpsLogStart()
+{
+  _gpsLogSartFlg = true;
+  _coordinateTable.clearCoordinate();
+}
+//
+void gpsLogStop()
+{
+  _gpsLogSartFlg = false;
+  // ログをファイルに書き込む
+  csvExport(_coordinateTable.coordinates, 'gpsLog.csv');
 }
