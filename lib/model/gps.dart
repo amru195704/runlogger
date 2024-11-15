@@ -1,8 +1,10 @@
 import 'dart:async';
 
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_application_2/model/gpsLogData.dart';
 import 'package:geolocator/geolocator.dart';
+import 'dart:math';
 
 // debug用座標リスト
 List<(double,double)> debugPositions = [
@@ -164,75 +166,138 @@ Future<Position> _determinePosition() async {
   return await Geolocator.getCurrentPosition();
 }
 
-// デバッグ用の位置情報を返す
-int _posNo=0;
-Future<Position> getLocation() async
-{
-  if (kDebugMode) {
-    double lat, lon;
-    (lat, lon) = debugPositions[_posNo];
-    // 最終データチェック
-    _posNo++;
-    if (_posNo >= debugPositions.length) {
-      _posNo = 0;
-    }
-    // デバッグ用の位置情報を返す
-    return Future.value(Position(
-      latitude: lat,
-      longitude: lon,
-      timestamp: DateTime.now(),
-      accuracy: 0,
-      altitude: 0,
-      heading: 0,
-      speed: 0,
-      speedAccuracy: 0,
-      altitudeAccuracy: 0,
-      headingAccuracy: 0,
-    ));
-  }
-  else 
-  {
-    return await Geolocator.getCurrentPosition();
-  }
-}
-
-/// GPSの位置情報を取得して、gpsLogDataに格納する
-bool _gpsStartFlg = false;
-bool _gpsLogSartFlg = false;
-CoordinateTable _coordinateTable = CoordinateTable();
-//
-void gpsStart()
-{
-  _gpsStartFlg = true;
-  // 1. Timer.periodic : 新しい繰り返しタイマーを作成します
-  // 1秒ごとに _counterを1ずつ足していく
-  Timer.periodic(
-    // 第一引数：繰り返す間隔の時間を設定
-    const Duration(seconds: 1),
-    // 第二引数：その間隔ごとに動作させたい処理を書く
-    (Timer timer) async {
-      final pos = await getLocation() ;
-      if (_gpsLogSartFlg == true) {
-        // 位置情報を記録する
-        _coordinateTable.addCoordinate(Coordinate.now(
-          latitude: pos.latitude,
-          longitude: pos.longitude,
-          altitude: pos.altitude,
-        ));
+// モジュールグループを表すのに使用されるクラス
+class Gps {
+  // デバッグ用の位置情報を返す
+  static int _posNo = 0;
+  static late Position _currentPos;
+  static Position get currentPos => _currentPos;
+  static final _random = Random();
+  //
+  static Future<Position> getLocation() async {
+    if (kDebugMode) {
+      double lat, lon;
+      (lat, lon) = debugPositions[_posNo];
+      // 最終データチェック
+      _posNo++;
+      if (_posNo >= debugPositions.length) {
+        _posNo = 0;
       }
-    },
-  );
-}
-//
-void gpsLogStart()
-{
-  _gpsLogSartFlg = true;
-  _coordinateTable.clearCoordinate();
-}
-//
-void gpsLogStop()
-{
-  _gpsLogSartFlg = false;
-  // ログをファイルに書き込む
-  csvExport(_coordinateTable.coordinates, 'gpsLog.csv');
+      // 0.0から1.0未満のランダムな実数
+      double randomDouble = _random.nextDouble()*10;
+      // デバッグ用の位置情報を返す
+      return Future.value(Position(
+        latitude: lat,
+        longitude: lon,
+        timestamp: DateTime.now(),
+        accuracy: 0,
+        altitude: randomDouble,
+        heading: 0,
+        speed: 0,
+        speedAccuracy: 0,
+        altitudeAccuracy: 0,
+        headingAccuracy: 0,
+      ));
+    } else {
+      return await Geolocator.getCurrentPosition();
+    }
+  }
+
+  /// GPSの位置情報を取得して、gpsLogDataに格納する
+  static bool _gpsStartFlg = false;
+  static late DateTime _gpsStartTime ;
+  // ログ開始フラグ
+  static bool _gpsLogSartFlg = false;
+  static late DateTime _gpsLogStartTime ;
+  // 座標保存テーブル
+  static CoordinateTable _coordinateTable = CoordinateTable();
+  //  run グラフデータ
+  static List<FlSpot> _spdDatList = [];
+  static List<FlSpot> _altDatList = [];
+  // ログインデックス
+  static double graphIdx = 0.0;
+  //
+  static void gpsStart() {
+    _gpsStartFlg = true;
+    _gpsStartTime = DateTime.now();
+    // 1. Timer.periodic : 新しい繰り返しタイマーを作成します
+    // 1秒ごとに _counterを1ずつ足していく
+    Timer.periodic(
+      // 第一引数：繰り返す間隔の時間を設定
+      const Duration(seconds: 1),
+      // 第二引数：その間隔ごとに動作させたい処理を書く
+      (Timer timer) async {
+        _currentPos = await getLocation();
+        if (_gpsLogSartFlg == true) {
+          // 位置情報を記録する
+          Coordinate rtnCod = _coordinateTable.addCoordinate(Coordinate.alt(
+            latitude: _currentPos.latitude,
+            longitude: _currentPos.longitude,
+            altitude: _currentPos.altitude,
+          ));
+          // run グラフデータ
+          _altDatList.add(FlSpot(graphIdx, rtnCod.altitude));
+          if (rtnCod.dltTime > 0.0)
+          {
+            double speed = rtnCod.dltDistance / rtnCod.dltTime; // m/s
+            _spdDatList.add(FlSpot(graphIdx, speed));
+          }
+          else
+          {
+            _spdDatList.add(FlSpot(graphIdx, 0.0));
+          }
+          graphIdx += 1.0;
+        }
+      },
+    );
+  }
+  static void gpsLogStart()
+  {
+    _gpsLogSartFlg = true;
+    _coordinateTable.clearCoordinate();
+    _altDatList.clear();
+    _spdDatList.clear();
+    graphIdx = 0.0;
+    _gpsLogStartTime = DateTime.now();
+  }
+  //
+  static void gpsLogStop()
+  {
+    _gpsLogSartFlg = false;
+    // ログをファイルに書き込む
+    //csvExport(_coordinateTable.coordinates, 'gpsLog.csv');
+  }
+  // 表示文字列取得
+  // ログ系か時間の文字列を戻す
+  static String getGpsLogTime()
+  {
+    if (_gpsLogSartFlg == true)
+    {
+      return DateTime.now().difference(_gpsLogStartTime).toString();
+    }
+    return "00:00:00";
+  }
+  // ログの移動距離文字列を戻す
+  static String getGpsLogDistance()
+  {
+    if (_gpsLogSartFlg == true)
+    {
+      double distance = _coordinateTable.getDistance();
+      if (distance > 1000.0)
+      {
+        return (distance / 1000.0).toStringAsFixed(1) + "km";
+      }
+      return distance.toStringAsFixed(1) + "m";
+    }
+    return "0.0km";
+  }
+  // ロググラフデータを戻す
+  static List<FlSpot> getGpsLogGraphData(int idx)
+  {
+    if (idx == 0)
+    {
+      return _spdDatList;
+    }
+    return _altDatList;
+  }
 }

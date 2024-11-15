@@ -2,8 +2,6 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:geolocator/geolocator.dart';
-import 'package:latlong2/latlong.dart';
-
 /// <summary>
 /// CSV file 読み込み
 /// </summary>
@@ -48,6 +46,7 @@ Future<void> csvExport(List<List> exportList, String exportPath) async {
 // Providerの例
 class CoordinateTable {
   List<Coordinate> _coordinates = [];
+  late Coordinate _oldCoordinate ;
 
   List<Coordinate> get coordinates => _coordinates;
 
@@ -56,8 +55,22 @@ class CoordinateTable {
     _coordinates = value;
   }
   // １座標データの追加
-  void addCoordinate(Coordinate coordinate) {
+  Coordinate addCoordinate(Coordinate coordinate) {
+    if (_coordinates.isNotEmpty) {
+      coordinate.dltDistance = Geolocator.distanceBetween(
+        _oldCoordinate.latitude,
+        _oldCoordinate.longitude,
+        coordinate.latitude,
+        coordinate.longitude,
+      )
+      ;    
+      coordinate.dltTime = coordinate.timestamp.difference(_oldCoordinate.timestamp).inSeconds.toDouble();
+      //
+    }
     _coordinates.add(coordinate);
+    _oldCoordinate = coordinate;
+    //
+    return coordinate;
   }
   // データの削除
   void removeCoordinate(int index) {
@@ -67,6 +80,19 @@ class CoordinateTable {
   void clearCoordinate() {
     _coordinates.clear();
   }
+  // 距離計算
+  double getDistance() {
+    double distance = 0;
+    for (int i = 0; i < _coordinates.length - 1; i++) {
+      distance += Geolocator.distanceBetween(
+        _coordinates[i].latitude,
+        _coordinates[i].longitude,
+        _coordinates[i + 1].latitude,
+        _coordinates[i + 1].longitude,
+      );
+    }
+    return distance;
+  }
 }
 
 class Coordinate {
@@ -74,15 +100,23 @@ class Coordinate {
   double longitude;
   late double altitude;
   late DateTime timestamp;
-
+  late double dltDistance;
+  late double dltTime;
   //
-  Coordinate({required this.latitude, required this.longitude, required this.altitude, required this.timestamp});
+  Coordinate({required this.latitude, required this.longitude, required this.altitude, required this.timestamp}) {
+    dltDistance = 0;
+    dltTime = 0;
+  }
   Coordinate.alt({required this.latitude, required this.longitude, required this.altitude}) {
+    timestamp = DateTime.now();
+    dltDistance = 0;
+    dltTime = 0;
+  }
+  Coordinate.now({required this.latitude, required this.longitude}) {
     altitude = 0;
     timestamp = DateTime.now();
-  }
-  Coordinate.now({required this.latitude, required this.longitude, required this.altitude}) {
-    timestamp = DateTime.now();
+    dltDistance = 0;
+    dltTime = 0;
   }
 
 }

@@ -1,7 +1,6 @@
 
 import 'package:flutter/material.dart';
 import 'model/gps.dart';
-import 'package:platform_maps_flutter/platform_maps_flutter.dart';
 import 'dart:async';
 import 'package:fl_chart/fl_chart.dart';
 
@@ -34,6 +33,12 @@ class _MyRunPageState extends State<MyRunPage> {
   // 位置情報の初期値
   double _lat = 33.12;
   double _lon = 131.789;
+  // 表示様変数データ
+  String _time = "00:00:00";
+  String _distance = "0.0km";
+  //
+  List<FlSpot> _spdGraphList = [];
+  List<FlSpot> _altGraphList = [];
   //
   @override
   void initState() {
@@ -45,12 +50,18 @@ class _MyRunPageState extends State<MyRunPage> {
       const Duration(seconds: 1),
       // 第二引数：その間隔ごとに動作させたい処理を書く
       (Timer timer) async {
-        final pos = await getLocation() ;
+        final pos = Gps.currentPos ;
         _lat = pos.latitude;
         _lon = pos.longitude;
         //実態がある場合のみ、画面を更新する
         if (mounted == true)
         {
+          // 表示の更新　
+          _time = Gps.getGpsLogTime();
+          _distance = Gps.getGpsLogDistance();
+          _spdGraphList = Gps.getGpsLogGraphData(0);
+          _altGraphList = Gps.getGpsLogGraphData(1);
+          //
           setState(() {
           });
         }
@@ -83,24 +94,29 @@ class _MyRunPageState extends State<MyRunPage> {
           TextButton(
               style: styl0,
             onPressed: () => {print("Timeボタンが押されたよ")},
-            child: const Text("00:00:00"),
+            child: Text(_time),
           ),
           TextButton(
               style:  styl0,   
             onPressed: () => {print("Resultボタンが押されたよ")},
-            child: const Text("0.0km"),
+            child: Text(_distance),
           ),
           Row(
              mainAxisAlignment: MainAxisAlignment.spaceAround,
              children: [
                 TextButton(
                   style: styl1,         
-                  onPressed: () => {print("Startボタンが押されたよ")},
+                  onPressed: () => {
+                    print("Startタンが押されたよ"),
+                    Gps.gpsLogStart(),
+                  },
                   child: const Text("Start"),
                 ),
                 TextButton(
                   style: styl1,  
-                  onPressed: () => {print("Stopタンが押されたよ")},
+                  onPressed: () => {
+                    print("Stopタンが押されたよ"),
+                    Gps.gpsLogStop(),},
                   child: const Text("Stop"),
                 ),
                 TextButton(
@@ -110,24 +126,13 @@ class _MyRunPageState extends State<MyRunPage> {
                 ),
              ]),
           SizedBox(
-            width: screenWidth * 0.95,
+            width: screenWidth * 0.90,
             height: screenWidth * 0.95 * 0.4,
             child: LineChart(
               LineChartData(
                 lineBarsData: [
                   LineChartBarData(
-                    spots: const [
-                      FlSpot(1, 0),
-                      FlSpot(2, 400),
-                      FlSpot(3, 650),
-                      FlSpot(4, 800),
-                      FlSpot(5, 870),
-                      FlSpot(6, 920),
-                      FlSpot(7, 960),
-                      FlSpot(8, 980),
-                      FlSpot(9, 990),
-                      FlSpot(10, 995),
-                    ],
+                    spots: _spdGraphList, //速度グラフ m/s
                     isCurved: true,
                     color: Colors.blue,
                   ),
@@ -142,30 +147,19 @@ class _MyRunPageState extends State<MyRunPage> {
                   rightTitles:
                       AxisTitles(sideTitles: SideTitles(showTitles: false)),
                 ),
-                maxY: 1000,
+                maxY: 10,
                 minY: 0,
               ),
             ),
           ),
           SizedBox(
-            width: screenWidth * 0.95,
+            width: screenWidth * 0.90,
             height: screenWidth * 0.95 * 0.4,
             child: LineChart(
               LineChartData(
                 lineBarsData: [
                   LineChartBarData(
-                    spots: const [
-                      FlSpot(1, 0),
-                      FlSpot(2, 400),
-                      FlSpot(3, 650),
-                      FlSpot(4, 800),
-                      FlSpot(5, 870),
-                      FlSpot(6, 920),
-                      FlSpot(7, 960),
-                      FlSpot(8, 980),
-                      FlSpot(9, 990),
-                      FlSpot(10, 995),
-                    ],
+                    spots:_altGraphList,  //標高グラフ
                     isCurved: true,
                     color: Colors.blue,
                   ),
@@ -180,7 +174,7 @@ class _MyRunPageState extends State<MyRunPage> {
                   rightTitles:
                       AxisTitles(sideTitles: SideTitles(showTitles: false)),
                 ),
-                maxY: 1000,
+                maxY: 10,
                 minY: 0,
               ),
             ),

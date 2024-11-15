@@ -4,11 +4,14 @@ import 'model/gps.dart';
 import 'run.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  MyApp({super.key})
+  {
+    Gps.gpsStart();
+  }
 
 
   @override

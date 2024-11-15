@@ -56,7 +56,7 @@ class _MyMapPageState extends State<MyMapPage> {
       const Duration(seconds: 1),
       // 第二引数：その間隔ごとに動作させたい処理を書く
       (Timer timer) async {
-        final pos = await getLocation() ;
+        final pos = Gps.currentPos;
         _lat = pos.latitude;
         _lon = pos.longitude;
         Marker mak = Marker(
