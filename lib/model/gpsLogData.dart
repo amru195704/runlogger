@@ -43,34 +43,90 @@ Future<void> csvExport(List<List> exportList, String exportPath) async {
   await iosink.close();
 }
 
-// Providerの例
+// GPSデータのログ用保存クラス
 class CoordinateTable {
+  //内部データ
   List<Coordinate> _coordinates = [];
+  //2点間の距離・時間計算用の１つ前の座標
   late Coordinate _oldCoordinate ;
-
+  //
+  late Coordinate _minPos ;
+  late Coordinate _maxPos ;
+  // total距離
+  late double _totalDistance;
+  // データの取得用
   List<Coordinate> get coordinates => _coordinates;
-
-  // データの全部追加
-  set coordinates(List<Coordinate> value) {
-    _coordinates = value;
+  Coordinate get minPos => _minPos;
+  Coordinate get maxPos => _maxPos;
+  double get totalDistance => _totalDistance;
+  // コンストラクタ
+  CoordinateTable() {
+    init();
+  }
+  //
+  void init()
+  {
+    _coordinates = [];
+    _totalDistance = 0;
+    //
+    _minPos = Coordinate.alt(latitude: 90, longitude: 90, altitude: 3000);
+    _maxPos = Coordinate.alt(latitude: -90, longitude: -90, altitude: -3000);
   }
   // １座標データの追加
-  Coordinate addCoordinate(Coordinate coordinate) {
+  Coordinate addCoordinate(Coordinate oneCod) {
+    //2個目以上のデータの場合、前回の座標との距離・時間を計算
     if (_coordinates.isNotEmpty) {
-      coordinate.dltDistance = Geolocator.distanceBetween(
+      //距離計算
+      oneCod.dltDistance = Geolocator.distanceBetween(
         _oldCoordinate.latitude,
         _oldCoordinate.longitude,
-        coordinate.latitude,
-        coordinate.longitude,
-      )
-      ;    
-      coordinate.dltTime = coordinate.timestamp.difference(_oldCoordinate.timestamp).inSeconds.toDouble();
-      //
+        oneCod.latitude,
+        oneCod.longitude,
+      );
+      //時間計算   
+      oneCod.dltTime = oneCod.timestamp.difference(_oldCoordinate.timestamp).inSeconds.toDouble();
+      //速度計算
+      if (oneCod.dltTime == 0) {
+        oneCod.dltSpeed = 0;
+      } else {
+        oneCod.dltSpeed = oneCod.dltDistance / oneCod.dltTime;
+        if (oneCod.dltSpeed.isNaN || oneCod.dltSpeed.isInfinite) {
+          oneCod.dltSpeed = 0;
+        }
+        else if (oneCod.dltSpeed > 20) {  // この最大２０はログタイプにより変更する
+          oneCod.dltSpeed = 20;
+        }
+      }
+      // total距離
+      _totalDistance += oneCod.dltDistance;
     }
-    _coordinates.add(coordinate);
-    _oldCoordinate = coordinate;
-    //
-    return coordinate;
+     // データの追加
+    _coordinates.add(oneCod);
+    // １つ前の座標を保存しておく
+    _oldCoordinate = oneCod;
+      // 最大・最小座標の更新
+      // 緯度・経度
+      _minPos.latitude  = (_minPos.latitude  > oneCod.latitude)  ? oneCod.latitude  : _minPos.latitude;
+      _minPos.longitude = (_minPos.longitude > oneCod.longitude) ? oneCod.longitude : _minPos.longitude;
+      _maxPos.latitude  = (_maxPos.latitude  < oneCod.latitude)  ? oneCod.latitude  : _maxPos.latitude;
+      _maxPos.longitude = (_maxPos.longitude < oneCod.longitude) ? oneCod.longitude : _maxPos.longitude;
+      // 標高
+      _minPos.altitude  = (_minPos.altitude  > oneCod.altitude)  ? oneCod.altitude  : _minPos.altitude;
+      _maxPos.altitude  = (_maxPos.altitude  < oneCod.altitude)  ? oneCod.altitude  : _maxPos.altitude;
+      // start/end時間
+      _minPos.timestamp = (_minPos.timestamp.isAfter(oneCod.timestamp)) ? oneCod.timestamp : _minPos.timestamp;
+      _maxPos.timestamp = (_maxPos.timestamp.isBefore(oneCod.timestamp)) ? oneCod.timestamp : _maxPos.timestamp;
+      // 2点間距離
+      _minPos.dltDistance = (_minPos.dltDistance > oneCod.dltDistance) ? oneCod.dltDistance : _minPos.dltDistance;
+      _maxPos.dltDistance = (_maxPos.dltDistance < oneCod.dltDistance) ? oneCod.dltDistance : _maxPos.dltDistance;
+      // 2点間時間
+      _minPos.dltTime = (_minPos.dltTime > oneCod.dltTime) ? oneCod.dltTime : _minPos.dltTime;
+      _maxPos.dltTime = (_maxPos.dltTime < oneCod.dltTime) ? oneCod.dltTime : _maxPos.dltTime;
+      // 2点間speed
+      _minPos.dltSpeed = (_minPos.dltSpeed > oneCod.dltSpeed) ? oneCod.dltSpeed : _minPos.dltSpeed;
+      _maxPos.dltSpeed = (_maxPos.dltSpeed < oneCod.dltSpeed) ? oneCod.dltSpeed : _maxPos.dltSpeed;
+    //　追加した座標(dltDistance,dltTimeを追加した)を返す
+    return oneCod;
   }
   // データの削除
   void removeCoordinate(int index) {
@@ -81,17 +137,12 @@ class CoordinateTable {
     _coordinates.clear();
   }
   // 距離計算
-  double getDistance() {
-    double distance = 0;
+  double calcDistance() {
+    _totalDistance = 0;
     for (int i = 0; i < _coordinates.length - 1; i++) {
-      distance += Geolocator.distanceBetween(
-        _coordinates[i].latitude,
-        _coordinates[i].longitude,
-        _coordinates[i + 1].latitude,
-        _coordinates[i + 1].longitude,
-      );
+      _totalDistance += _coordinates[i].dltDistance;
     }
-    return distance;
+    return _totalDistance;
   }
 }
 
@@ -102,21 +153,25 @@ class Coordinate {
   late DateTime timestamp;
   late double dltDistance;
   late double dltTime;
+  late double dltSpeed;
   //
   Coordinate({required this.latitude, required this.longitude, required this.altitude, required this.timestamp}) {
     dltDistance = 0;
     dltTime = 0;
+    dltSpeed = 0;
   }
   Coordinate.alt({required this.latitude, required this.longitude, required this.altitude}) {
     timestamp = DateTime.now();
     dltDistance = 0;
     dltTime = 0;
+    dltSpeed = 0;
   }
   Coordinate.now({required this.latitude, required this.longitude}) {
     altitude = 0;
     timestamp = DateTime.now();
     dltDistance = 0;
     dltTime = 0;
+    dltSpeed = 0;
   }
 
 }

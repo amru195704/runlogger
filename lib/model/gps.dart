@@ -171,7 +171,10 @@ class Gps {
   // デバッグ用の位置情報を返す
   static int _posNo = 0;
   static late Position _currentPos;
+  static late Coordinate _currentCoordinate;
+  //
   static Position get currentPos => _currentPos;
+  static Coordinate get currentCoordinate => _currentCoordinate;
   static final _random = Random();
   //
   static Future<Position> getLocation() async {
@@ -207,7 +210,7 @@ class Gps {
   static bool _gpsStartFlg = false;
   static late DateTime _gpsStartTime ;
   // ログ開始フラグ
-  static bool _gpsLogSartFlg = false;
+  static bool logSartFlg = false;
   static late DateTime _gpsLogStartTime ;
   // 座標保存テーブル
   static CoordinateTable _coordinateTable = CoordinateTable();
@@ -228,42 +231,59 @@ class Gps {
       // 第二引数：その間隔ごとに動作させたい処理を書く
       (Timer timer) async {
         _currentPos = await getLocation();
-        if (_gpsLogSartFlg == true) {
+        if (logSartFlg == true) {
           // 位置情報を記録する
-          Coordinate rtnCod = _coordinateTable.addCoordinate(Coordinate.alt(
+          _currentCoordinate = _coordinateTable.addCoordinate(Coordinate.alt(
             latitude: _currentPos.latitude,
             longitude: _currentPos.longitude,
             altitude: _currentPos.altitude,
           ));
           // run グラフデータ
-          _altDatList.add(FlSpot(graphIdx, rtnCod.altitude));
-          if (rtnCod.dltTime > 0.0)
-          {
-            double speed = rtnCod.dltDistance / rtnCod.dltTime; // m/s
-            _spdDatList.add(FlSpot(graphIdx, speed));
-          }
-          else
-          {
-            _spdDatList.add(FlSpot(graphIdx, 0.0));
-          }
+          _altDatList.add(FlSpot(graphIdx, _currentCoordinate.altitude));
+          _spdDatList.add(FlSpot(graphIdx, _currentCoordinate.dltSpeed));
           graphIdx += 1.0;
         }
       },
     );
   }
+  // minPos/maxPosの取得
+  static Coordinate getMinPos() {
+    return _coordinateTable.minPos;
+  }
+  static Coordinate getMaxPos() {
+    return _coordinateTable.maxPos;
+  }
+  // (標高のmin.max)を取得
+  static double getAltMin() {
+    return (_coordinateTable.minPos.altitude);
+  }
+  static double getAltMax() {
+    return (_coordinateTable.maxPos.altitude);
+  }
+  // (速度のmin.max)を取得
+  static double getSpeedMin() {
+    return (_coordinateTable.minPos.dltSpeed);
+  }
+  static double getSpeedMax() {
+    return (_coordinateTable.maxPos.dltSpeed);
+  }
+ 
+  // ログ開始
   static void gpsLogStart()
   {
-    _gpsLogSartFlg = true;
+    logSartFlg = true;
     _coordinateTable.clearCoordinate();
     _altDatList.clear();
     _spdDatList.clear();
+    _altDatList.add(FlSpot(0,0));
+     _spdDatList.add(FlSpot(0,0));
     graphIdx = 0.0;
     _gpsLogStartTime = DateTime.now();
   }
   //
   static void gpsLogStop()
   {
-    _gpsLogSartFlg = false;
+    logSartFlg = false;
     // ログをファイルに書き込む
     //csvExport(_coordinateTable.coordinates, 'gpsLog.csv');
   }
@@ -271,7 +291,7 @@ class Gps {
   // ログ系か時間の文字列を戻す
   static String getGpsLogTime()
   {
-    if (_gpsLogSartFlg == true)
+    if (logSartFlg == true)
     {
       return DateTime.now().difference(_gpsLogStartTime).toString();
     }
@@ -280,9 +300,9 @@ class Gps {
   // ログの移動距離文字列を戻す
   static String getGpsLogDistance()
   {
-    if (_gpsLogSartFlg == true)
+    if (logSartFlg == true)
     {
-      double distance = _coordinateTable.getDistance();
+      double distance = _coordinateTable.totalDistance;
       if (distance > 1000.0)
       {
         return (distance / 1000.0).toStringAsFixed(1) + "km";
