@@ -45,16 +45,15 @@ class _MyRunPageState extends State<MyRunPage> {
   double _minAlt = 0, _maxAlt = 0;
   double _minSpd = 0, _maxSpd = 0;
   //グラフメモリー用の値をキリの良い値にする
-  double convGraphValue(double value, bool upFlg) {
-    int digit = (value / 10.0).toInt();
+  double convGraphValue(double value, bool upFlg, int scale ) {
+    int digit = (value / scale).toInt();
     if (upFlg == true) {
-      return (digit + 1) * 10;
+      return ((digit + 1) * scale).toDouble();
     } else {
-      return digit * 10;
+      return (digit * scale).toDouble();
     }
   }
-
-            
+        
   @override
   void initState() {
     super.initState();
@@ -65,21 +64,23 @@ class _MyRunPageState extends State<MyRunPage> {
       const Duration(seconds: 1),
       // 第二引数：その間隔ごとに動作させたい処理を書く
       (Timer timer) async {
-  
         //実態がある場合のみ、画面を更新する
         if (mounted == true && Gps.logSartFlg)
         {
+          if (Gps.getCoordinateCount() <0  ) {
+            return;
+          }
           //final pos = Gps.currentPos ;
           final oneCod = Gps.currentCoordinate;
           _lat = oneCod.latitude;
           _lon = oneCod.longitude;
            // 速度のmin/max取得
-           _minSpd  = convGraphValue(Gps.getSpeedMin(), false);
-           _maxSpd  = convGraphValue(Gps.getSpeedMax(), true);   
+           _minSpd  = convGraphValue(Gps.getSpeedMin(), false,2);
+           _maxSpd  = convGraphValue(Gps.getSpeedMax(), true,2);   
            _spdGraphList = Gps.getGpsLogGraphData(0);         
           // 標高のmin/max取得
-          _minAlt = convGraphValue(Gps.getAltMin(), false);
-          _maxAlt = convGraphValue(Gps.getAltMax(), true);
+          _minAlt = convGraphValue(Gps.getAltMin(), false,5);
+          _maxAlt = convGraphValue(Gps.getAltMax(), true,5);
           _altGraphList = Gps.getGpsLogGraphData(1);
           // 表示の更新　
           _timeStr = Gps.getGpsLogTime();
@@ -87,7 +88,9 @@ class _MyRunPageState extends State<MyRunPage> {
           _speedStr = "${oneCod.dltSpeed.toStringAsFixed(1)}m/s";
           _altStr = "${oneCod.altitude.toStringAsFixed(1)}m";
           //
-          setState(() {});  //buildメソッドを呼び出す
+          if (_altGraphList.isNotEmpty && _spdGraphList.isNotEmpty) {
+            setState(() {});  //buildメソッドを呼び出す
+          }
         }
       },
     );
@@ -98,6 +101,7 @@ class _MyRunPageState extends State<MyRunPage> {
                     spots: _spdGraphList, //速度グラフ m/s
                     //isCurved: true,
                     color: Colors.blue,
+                    dotData: const FlDotData(show: false), // 点を非表示にする
                   ),
                 ],
                 titlesData: FlTitlesData(
@@ -119,6 +123,7 @@ class _MyRunPageState extends State<MyRunPage> {
                     spots: _altGraphList, //速度グラフ m/s
                     //isCurved: true,
                     color: Colors.blue,
+                    dotData: const FlDotData(show: false), // 点を非表示にする
                   ),
                 ],
                 titlesData: FlTitlesData(
@@ -193,13 +198,13 @@ class _MyRunPageState extends State<MyRunPage> {
                 ),
              ]),
           SizedBox(
-            width: screenWidth * 0.90,
+            width: screenWidth * 0.85,
             height: screenWidth * 0.95 * 0.4,
             child:LineChart( spdlineChartData
               ),
             ),
           SizedBox(
-            width: screenWidth * 0.90,
+            width: screenWidth * 0.85,
             height: screenWidth * 0.95 * 0.4,
             child: LineChart( altlineChartData
             ),

@@ -7,7 +7,11 @@ import 'dart:async';
 // info.plistに以下を追加
 // 	<key>MinimumOSVersion</key>
 //	<string>14.5</string>
-//
+
+// 位置情報の初期値
+  double _zoom = 20;
+  double _lat = 35.7052;
+  double _lon = 139.572;
 
 class MyMap extends StatelessWidget {
   const MyMap({super.key});
@@ -32,10 +36,7 @@ class MyMapPage extends StatefulWidget {
 }
 
 class _MyMapPageState extends State<MyMapPage> {
-  // 位置情報の初期値
-  double _zoom = 16;
-  double _lat = 33.12;
-  double _lon = 131.789;
+
   // 地図の種類
   MapType _currentMapType = MapType.normal;
   // マーカーのリスト
@@ -44,7 +45,6 @@ class _MyMapPageState extends State<MyMapPage> {
   //
 
   late PlatformMapController _controller;
-
   //
   @override
   void initState() {

@@ -52,7 +52,11 @@ class Gps {
   // デバッグ用の位置情報を返す
   static int _posNo = 0;
   static late Position _currentPos;
-  static late Coordinate _currentCoordinate;
+  static Coordinate _currentCoordinate= Coordinate.alt(
+        latitude: 0,
+        longitude: 0,
+        altitude: 0,
+      );
   //
   static Position get currentPos => _currentPos;
   static Coordinate get currentCoordinate => _currentCoordinate;
@@ -61,14 +65,14 @@ class Gps {
   static Future<Position> getLocation() async {
     if (kDebugMode) {
       double lat, lon, alt;
-      (lat, lon, alt) = debug3Positions[_posNo];
+      (lat, lon, alt) = debugMitakaPositions[_posNo];
       // 最終データチェック
       _posNo++;
-      if (_posNo >= debug3Positions.length) {
+      if (_posNo >= debugMitakaPositions.length) {
         _posNo = 0;
       }
       // 標高を少し、変化するため＝0.0から1.0未満のランダムな実数
-      double randomDouble = _random.nextDouble();
+      double randomDouble = _random.nextDouble()*2.0;
       // デバッグ用の位置情報を返す
       return Future.value(Position(
         latitude: lat,
@@ -120,13 +124,20 @@ class Gps {
             altitude: _currentPos.altitude,
           ));
           // run グラフデータ
-          _altDatList.add(FlSpot(graphIdx, _currentCoordinate.altitude));
-          _spdDatList.add(FlSpot(graphIdx, _currentCoordinate.dltSpeed));
+          if (graphIdx > 0.0) {
+            _altDatList.add(FlSpot(graphIdx, _currentCoordinate.altitude));
+            _spdDatList.add(FlSpot(graphIdx, _currentCoordinate.dltSpeed));
+          }
           graphIdx += 1.0;
         }
       },
     );
   }
+  // 保存座標数を戻す
+  static int getCoordinateCount() {
+    return _coordinateTable.coordinates.length;
+  }
+
   // minPos/maxPosの取得
   static Coordinate getMinPos() {
     return _coordinateTable.minPos;
@@ -156,8 +167,6 @@ class Gps {
     _coordinateTable.clearCoordinate();
     _altDatList.clear();
     _spdDatList.clear();
-    _altDatList.add(FlSpot(0,0));
-     _spdDatList.add(FlSpot(0,0));
     graphIdx = 0.0;
     _gpsLogStartTime = DateTime.now();
   }

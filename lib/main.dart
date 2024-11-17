@@ -23,9 +23,9 @@ class MyApp extends StatelessWidget {
           appBar: AppBar(
             bottom: const TabBar(
               tabs: [
-                Tab(icon: Icon(Icons.directions_car), text: "map"),
-                Tab(icon: Icon(Icons.directions_transit), text: "run"),
-                Tab(icon: Icon(Icons.directions_bike), text: "Bike"),
+                Tab(icon: ImageIcon(AssetImage('assets/images/map-01.png'))),
+                Tab(icon: ImageIcon(AssetImage('assets/images/run-01.png'))),
+                Tab(icon: ImageIcon(AssetImage('assets/images/set-00.png'))),
               ],
             ),
             title: const Text('RunLogger'),
