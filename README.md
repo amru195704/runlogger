@@ -1,6 +1,7 @@
 # Runlogger Flutter Test
 
 以前Objective-cで作成していたRunloggerをテスト的にFlutterで再作成したテストプロジェクトです.
+数週間の作業なのでFlutterやDart開発のプロから見たら、もっと簡潔で良いコードにすべき点が多々あると思いますが、何かの参考にはなると思いますのでGitHubに公開します。
 
 ## 概要
 

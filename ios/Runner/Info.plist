@@ -49,10 +49,12 @@
 	<string>14.5</string>
     <!-- geolocator Section -->
     <key>NSLocationWhenInUseUsageDescription</key>
-    <string>Required to post location information when posting photos and videos.</string>
+    <string>GPS座標をログの為に使用します</string>
     <key>NSLocationAlwaysUsageDescription</key>
-    <string>Required to post location information when posting photos and videos.</string>
+    <string>GPS座標をログの為に使用します.</string>
     <!-- End of the geolocator Section -->
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
  </dict>
  </plist>
 </dict>

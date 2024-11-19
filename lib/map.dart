@@ -3,13 +3,6 @@ import 'model/gps.dart';
 import 'package:platform_maps_flutter/platform_maps_flutter.dart';
 import 'dart:async';
 
-// info.plistに以下を追加
-// 	<key>MinimumOSVersion</key>
-//	<string>14.5</string>
-//
-// [起動アイコン設定]
-// % flutter pub run flutter_launcher_icons:main
-
 class MyMap extends StatelessWidget {
   const MyMap({super.key});
 
@@ -63,7 +56,7 @@ class _MyMapPageState extends State<MyMapPage> {
       const Duration(seconds: 1),
       // 第二引数：その間隔ごとに動作させたい処理を書く
       (Timer timer) async {
-        // 位置情報を記録する
+        // 位置情報を取得する
         final pos = Gps.currentPos;
         _lat = pos.latitude;
         _lon = pos.longitude;
@@ -74,6 +67,7 @@ class _MyMapPageState extends State<MyMapPage> {
           infoWindow: InfoWindow(title: '$_markerNo'),
           icon: BitmapDescriptor.defaultMarker,
         );
+        // マーカーを描画データテーブルに追加する。最大20個までで、巡回する
         _markTerable[_markerNo] = mak;
         _markerNo++;
         if (_markerNo >= 20) {
