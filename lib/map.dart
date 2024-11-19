@@ -6,6 +6,9 @@ import 'dart:async';
 // info.plistに以下を追加
 // 	<key>MinimumOSVersion</key>
 //	<string>14.5</string>
+//
+// [起動アイコン設定]
+// % flutter pub run flutter_launcher_icons:main
 
 class MyMap extends StatelessWidget {
   const MyMap({super.key});
