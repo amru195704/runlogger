@@ -16,6 +16,8 @@ import 'package:intl/intl.dart';
 /// 差分時間を文字列に変換する。
 /// hh:mm:ss.ssss形式
 /// </summary>
+/// 注意：intlパッケージを使うと簡単ですが、テストで
+/// あえて使わないで実装しています。
 String duration2String(Duration duration) {
   var microseconds = duration.inMicroseconds;
   var sign = "";
