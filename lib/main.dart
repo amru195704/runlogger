@@ -8,11 +8,9 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
-  MyApp({super.key})
-  {
+  MyApp({super.key}) {
     Gps.gpsStart();
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +26,7 @@ class MyApp extends StatelessWidget {
                 Tab(icon: ImageIcon(AssetImage('assets/images/set-00.png'))),
               ],
             ),
-            title: const Text('RunLogger'),
+            title: const Text('RunLogger Flutter Test'),
           ),
           body: const TabBarView(
             children: [

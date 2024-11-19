@@ -6,63 +6,71 @@ import 'package:flutter_application_2/model/debugData.dart';
 import 'package:flutter_application_2/model/gpsLogData.dart';
 import 'package:geolocator/geolocator.dart';
 import 'dart:math';
+import 'package:intl/intl.dart';
 
 //パッケージの追加
 // flutter pub add geolocator
 //
-/// デバイスの現在位置を決定する。
-/// 位置情報サービスが有効でない場合、または許可されていない場合。
-/// エラーを返します
-Future<Position> _determinePosition() async {
-  bool serviceEnabled;
-  LocationPermission permission;
 
-  // 位置情報サービスが有効かどうかをテストします。
-  serviceEnabled = await Geolocator.isLocationServiceEnabled();
-  if (!serviceEnabled) {
-    // 位置情報サービスが有効でない場合、続行できません。
-    // 位置情報にアクセスし、ユーザーに対して 
-    // 位置情報サービスを有効にするようアプリに要請する。
-    return Future.error('Location services are disabled.');
+/// <summary>
+/// 差分時間を文字列に変換する。
+/// hh:mm:ss.ssss形式
+/// </summary>
+String duration2String(Duration duration) {
+  var microseconds = duration.inMicroseconds;
+  var sign = "";
+  var negative = microseconds < 0;
+
+  var hours = microseconds ~/ Duration.microsecondsPerHour;
+  microseconds = microseconds.remainder(Duration.microsecondsPerHour);
+  if (negative) {
+    hours = 0 - hours; // Not using `-hours` to avoid creating -0.0 on web.
+    microseconds = 0 - microseconds;
+    sign = "-";
   }
+  var minutes = microseconds ~/ Duration.microsecondsPerMinute;
+  microseconds = microseconds.remainder(Duration.microsecondsPerMinute);
 
-  permission = await Geolocator.checkPermission();
-  if (permission == LocationPermission.denied) {
-    // ユーザーに位置情報を許可してもらうよう促す
-    permission = await Geolocator.requestPermission();
-    if (permission == LocationPermission.denied) {
-      // 拒否された場合エラーを返す
-      return Future.error('Location permissions are denied');
-    }
-  }
-  
-  // 永久に拒否されている場合のエラーを返す
-  if (permission == LocationPermission.deniedForever) {
-    return Future.error(
-      'Location permissions are permanently denied, we cannot request permissions.');
-  } 
+  var minutesPadding = minutes < 10 ? "0" : "";
 
-  // ここまでたどり着くと、位置情報に対しての権限が許可されているということなので
-  // デバイスの位置情報を返す。
-  return await Geolocator.getCurrentPosition();
+  var seconds = microseconds ~/ Duration.microsecondsPerSecond;
+  microseconds = microseconds.remainder(Duration.microsecondsPerSecond);
+
+  var secondsPadding = seconds < 10 ? "0" : "";
+
+  // Padding up to six digits for microseconds.
+  var s2sec = microseconds / 10000;
+  var s2secText = s2sec.toString().padLeft(2, "0");
+
+  return "$sign$hours:"
+      "$minutesPadding$minutes:"
+      "$secondsPadding$seconds."
+      "$s2secText";
 }
 
 // モジュールグループを表すのに使用されるクラス
+/// <summary>
+/// GPSの位置情報を取得するクラス.
+/// 別々な関数や値をまとめるためのクラスで、staticで全てアクセスします。
+/// </summary>
 class Gps {
-  // デバッグ用の位置情報を返す
+  // （内部）デバッグ用の位置情報を返す
   static int _posNo = 0;
   static late Position _currentPos;
-  static Coordinate _currentCoordinate= Coordinate.alt(
-        latitude: 0,
-        longitude: 0,
-        altitude: 0,
-      );
-  //
+  static Coordinate _currentCoordinate = Coordinate.alt(
+    latitude: 0,
+    longitude: 0,
+    altitude: 0,
+  );
+  // 外部からのアクセス用現在座標（Position形式）
   static Position get currentPos => _currentPos;
+  // 外部からのアクセス用現在座標（Coordinate形式）
   static Coordinate get currentCoordinate => _currentCoordinate;
+  // (内部でバック用）ランダムな値を生成するためのクラス
   static final _random = Random();
-  //
+  //　位置情報を取得する関数 (currentPos/currentCoordinateは、２次的な値です）
   static Future<Position> getLocation() async {
+    // デバッグモードの場合、デバッグ用の位置情報を返す
     if (kDebugMode) {
       double lat, lon, alt;
       (lat, lon, alt) = debugMitakaPositions[_posNo];
@@ -72,14 +80,14 @@ class Gps {
         _posNo = 0;
       }
       // 標高を少し、変化するため＝0.0から1.0未満のランダムな実数
-      double randomDouble = _random.nextDouble()*2.0;
+      double randomDouble = _random.nextDouble() * 2.0;
       // デバッグ用の位置情報を返す
       return Future.value(Position(
         latitude: lat,
         longitude: lon,
         timestamp: DateTime.now(),
         accuracy: 0,
-        altitude: alt+randomDouble,
+        altitude: alt + randomDouble,
         heading: 0,
         speed: 0,
         speedAccuracy: 0,
@@ -87,27 +95,23 @@ class Gps {
         headingAccuracy: 0,
       ));
     } else {
+      // 本番モードの場合、実際の位置情報を返す
       return await Geolocator.getCurrentPosition();
     }
   }
 
-  /// GPSの位置情報を取得して、gpsLogDataに格納する
-  static bool _gpsStartFlg = false;
-  static late DateTime _gpsStartTime ;
-  // ログ開始フラグ
+  // ログ開始フラグと開始時間
   static bool logSartFlg = false;
-  static late DateTime _gpsLogStartTime ;
-  // 座標保存テーブル
-  static CoordinateTable _coordinateTable = CoordinateTable();
+  static late DateTime _gpsLogStartTime;
+  // ログ座標保存テーブル
+  static final CoordinateTable _logCoordinateTable = CoordinateTable();
   //  run グラフデータ
-  static List<FlSpot> _spdDatList = [];
-  static List<FlSpot> _altDatList = [];
-  // ログインデックス
+  static final List<FlSpot> _spdDatList = [];
+  static final List<FlSpot> _altDatList = [];
+  // ロググラフXインデックス
   static double graphIdx = 0.0;
-  //
+  //　GPS計測開始
   static void gpsStart() {
-    _gpsStartFlg = true;
-    _gpsStartTime = DateTime.now();
     // 1. Timer.periodic : 新しい繰り返しタイマーを作成します
     // 1秒ごとに _counterを1ずつ足していく
     Timer.periodic(
@@ -118,7 +122,7 @@ class Gps {
         _currentPos = await getLocation();
         if (logSartFlg == true) {
           // 位置情報を記録する
-          _currentCoordinate = _coordinateTable.addCoordinate(Coordinate.alt(
+          _currentCoordinate = _logCoordinateTable.addCoordinate(Coordinate.alt(
             latitude: _currentPos.latitude,
             longitude: _currentPos.longitude,
             altitude: _currentPos.altitude,
@@ -133,81 +137,100 @@ class Gps {
       },
     );
   }
+
   // 保存座標数を戻す
   static int getCoordinateCount() {
-    return _coordinateTable.coordinates.length;
+    return _logCoordinateTable.coordinates.length;
   }
 
   // minPos/maxPosの取得
   static Coordinate getMinPos() {
-    return _coordinateTable.minPos;
+    return _logCoordinateTable.minPos;
   }
+
   static Coordinate getMaxPos() {
-    return _coordinateTable.maxPos;
+    return _logCoordinateTable.maxPos;
   }
+
   // (標高のmin.max)を取得
   static double getAltMin() {
-    return (_coordinateTable.minPos.altitude);
+    return (_logCoordinateTable.minPos.altitude);
   }
+
   static double getAltMax() {
-    return (_coordinateTable.maxPos.altitude);
+    return (_logCoordinateTable.maxPos.altitude);
   }
+
   // (速度のmin.max)を取得
   static double getSpeedMin() {
-    return (_coordinateTable.minPos.dltSpeed);
+    return (_logCoordinateTable.minPos.dltSpeed);
   }
+
   static double getSpeedMax() {
-    return (_coordinateTable.maxPos.dltSpeed);
+    return (_logCoordinateTable.maxPos.dltSpeed);
   }
- 
-  // ログ開始
-  static void gpsLogStart()
-  {
+
+  // ログ開始：_logCoordinateTableに座標を追加開始する
+  static void gpsLogStart() {
     logSartFlg = true;
-    _coordinateTable.clearCoordinate();
+    _logCoordinateTable.clearCoordinate();
     _altDatList.clear();
     _spdDatList.clear();
     graphIdx = 0.0;
     _gpsLogStartTime = DateTime.now();
   }
-  //
-  static void gpsLogStop()
-  {
+
+  //　ログ終了：_logCoordinateTableに座標を追加終了する
+  static void gpsLogStop() {
     logSartFlg = false;
     // ログをファイルに書き込む
-    //csvExport(_coordinateTable.coordinates, 'gpsLog.csv');
+    _logCoordinateTable.saveCsv();
   }
+
   // 表示文字列取得
   // ログ系か時間の文字列を戻す
-  static String getGpsLogTime()
-  {
-    if (logSartFlg == true)
-    {
-      return DateTime.now().difference(_gpsLogStartTime).toString();
+  static String getGpsLogTime() {
+    if (logSartFlg == true) {
+      // 差分時間を計算（Duration型）
+      Duration difference = DateTime.now().difference(_gpsLogStartTime);
+      return duration2String(difference); // HH:MM:SS形式   ;
     }
     return "00:00:00";
   }
+
   // ログの移動距離文字列を戻す
-  static String getGpsLogDistance()
-  {
-    if (logSartFlg == true)
-    {
-      double distance = _coordinateTable.totalDistance;
-      if (distance > 1000.0)
-      {
-        return (distance / 1000.0).toStringAsFixed(1) + "km";
+  static String getGpsLogDistance() {
+    if (logSartFlg == true) {
+      double distance = _logCoordinateTable.totalDistance;
+      if (distance > 1000.0) {
+        return "${(distance / 1000.0).toStringAsFixed(2)}km";
       }
-      return distance.toStringAsFixed(1) + "m";
+      return "${distance.toStringAsFixed(2)}m";
     }
     return "0.0km";
   }
+
   // ロググラフデータを戻す
-  static List<FlSpot> getGpsLogGraphData(int idx)
-  {
-    if (idx == 0)
-    {
-      return _spdDatList;
+  static List<FlSpot> getGpsLogGraphData(
+      int graphNo, double minD, double maxD, double xMaxDefault) {
+    if (logSartFlg == false) {
+      return [];
     }
-    return _altDatList;
+    if (_spdDatList.length < xMaxDefault) {
+      if (graphNo == 0) {
+        return _spdDatList;
+      }
+      return _altDatList;
+    }
+    // データ取得範囲計算
+    int minIdx = minD.toInt();
+    int maxIdx = maxD.toInt();
+    if (maxIdx >= _logCoordinateTable.coordinates.length) {
+      maxIdx = _logCoordinateTable.coordinates.length - 1;
+    }
+    if (graphNo == 0) {
+      return _spdDatList.sublist(minIdx, maxIdx);
+    }
+    return _altDatList.sublist(minIdx, maxIdx);
   }
 }
