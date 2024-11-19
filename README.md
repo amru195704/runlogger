@@ -25,4 +25,7 @@
 　Runlogger Flutter Testはあくまでもサンプルです  
 　自由に参照・使用してもらって良いのですが、あくまでも自己責任で使用してください  
 　このソースを使用した結果、何らかのトラブルが発生しても作者には何ら責任はありません  
+ 
+<img width="378" alt="地図画面" src="https://github.com/user-attachments/assets/800b0f57-afd4-4715-8b23-93ecbd045719">
 
+<img width="381" alt="RUN画面" src="https://github.com/user-attachments/assets/0d1440b7-1ae7-4926-b9ff-86b08b483a40">
